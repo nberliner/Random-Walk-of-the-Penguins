@@ -7,7 +7,7 @@ Created on Thu May  4 15:17:30 2017
 import numpy as np
 
 from utils.NestDistance import NestDistance
-
+from utils.utils import get_ts_steps
 
 
 def add_features(df_features, radius):
@@ -33,8 +33,9 @@ def add_proximity_nestCount(df_features, radius, nest_distance):
     df_features.sort_index(inplace=True)
         
     # Extract only the time stop column names
-    ts_step = [ item for item in df_features.columns if len(item)==2 and item[0] == 't' ]
-    ts_step = ts_step[-1] # only take the values of the last year
+    #ts_step = [ item for item in df_features.columns if len(item)==2 and item[0] == 't' ]
+    ts_step = get_ts_steps(df_features)[-1] # only take the values of the last year
+    #ts_step = ts_step[-1] # only take the values of the last year
     
     values = list()
     siteCount = list()

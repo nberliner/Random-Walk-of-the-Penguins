@@ -10,6 +10,7 @@ import pandas as pd
 
 from data.data import load_submissions
 from features.features import add_features
+from utils.utils import get_ts_steps
 
 
 ### Fit the model
@@ -33,7 +34,8 @@ def assemble_model_input(df_features):
     This function will take the feature DataFrame and compile the groups.
     """
     # Extract the time series columns
-    ts_steps = [ item for item in df_features.columns if len(item)==2 and item[0] == 't' ]
+    #ts_steps = [ item for item in df_features.columns if len(item)==2 and item[0] == 't' ]
+    ts_steps = get_ts_steps(df_features)
     dat_x = df_features.loc[:,ts_steps].values[:,:,np.newaxis]
     
     # Extract the auxiliary input columns
@@ -113,7 +115,8 @@ def shift(df_features, radius):
     value of the past year etc. This will need to recompute the added features
     and teh radius parameter thus needs to be specified.
     """
-    ts_steps = [ item for item in df_features.columns if len(item)==2 and item[0] == 't' ]
+    #ts_steps = [ item for item in df_features.columns if len(item)==2 and item[0] == 't' ]
+    ts_steps = get_ts_steps(df_features)
     
     # Shift the count data
     for i in range(len(ts_steps)-1):
