@@ -44,7 +44,7 @@ def keras_amape(accuracies):
         # calculate the percent error (replacing 0 with 1
         # in order to avoid divide-by-zero errors).
         #ones = K.ones(np.core.fromnumeric.shape(1,))
-        ones = K.ones(shape=(1,))
+        ones = K.ones(shape=(1,)) - 0.99
         pct_error = abs_error / K.maximum(ones, y_true)
 
         # adjust error by count accuracies

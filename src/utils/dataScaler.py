@@ -4,6 +4,7 @@ Created on Wed May  3 16:16:17 2017
 
 @author: nberliner
 """
+import numpy as np
 
 from sklearn.preprocessing import StandardScaler, RobustScaler
 
@@ -68,18 +69,22 @@ class percentChange():
         denominator[denominator == 0] = self.zero_value
         return(denominator)
     
-    def fit(self, df_nestCount, zero_value=100.):
+    def fit(self, df_nestCount, df_nestCountError, zero_value=100.):
         # Score the current df_nestCount
         self.df_nestCount = df_nestCount
+        self.df_nestCountError = df_nestCountError
         self.zero_value = zero_value
         
         # Divide the dataframe and compute the average percentage change per location and year
         denominator = df_nestCount.shift(axis=1)
         denominator[denominator == 0] = zero_value
         
-        self.df_scaled = self.df_nestCount / denominator
+        denominatorError = np.sqrt(df_nestCountError**2 + df_nestCountError.shift(axis=1)**2)
         
-        return(self.df_scaled)
+        self.df_scaled = self.df_nestCount / denominator
+        self.df_scaledError = self.df_nestCountError / denominatorError
+        
+        return(self.df_scaled, self.df_scaledError)
     
     def inverse_transform(self, df, keep=True):
         #assert(str(int(df_predict.name)-1) == self.denominator_predict.name)

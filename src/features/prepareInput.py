@@ -43,12 +43,15 @@ def assemble_timeseries_input(df, nan_mask, size):
     year = [ col for index,col in ordering ]
     
     # Assemble the missing flag
+    # Was the y_true value inferred?
     nan = [ nan_mask.loc[index,str(int(col)+1)] for index,col in ordering ]
+    # Where all the time-series inputs inferred
+    nan_t = [ all(nan_mask.loc[index,str(int(col)-size):str(int(col))]) for index,col in ordering ]
     
     # Put everything into a new DataFrame
     values = {'site_id': site_id, 'species': species, 'year': year,
-              'y_true': y.flatten(), 'inferred_y_true': nan}
-    columns = ['site_id', 'species', 'year', 'y_true', 'inferred_y_true']
+              'y_true': y.flatten(), 'inferred_y_true': nan, 'inferred_t': nan_t}
+    columns = ['site_id', 'species', 'year', 'y_true', 'inferred_y_true', 'inferred_t']
     for i in range(size):
         key = "t%s" %i
         values[key] = x[:,i]

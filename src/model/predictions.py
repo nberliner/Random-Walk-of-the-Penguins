@@ -39,7 +39,8 @@ def assemble_model_input(df_features):
     dat_x = df_features.loc[:,ts_steps].values[:,:,np.newaxis]
     
     # Extract the auxiliary input columns
-    ignore = ['y_true', 'inferred_y_true', 'countError', 'y_pred', 'site_id', 'species', 'year']
+    ignore = ['y_true', 'inferred_y_true', 'inferred_t', 'countError', 'y_pred', 
+              'site_id', 'species', 'year']
     aux_cols = [ item for item in df_features.columns if item not in ts_steps and item not in ignore ]
     aux_input = df_features.loc[:,aux_cols].values
     
