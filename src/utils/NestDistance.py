@@ -9,6 +9,8 @@ import pandas as pd
 from geopy.distance import vincenty
 from scipy.spatial.distance import pdist, squareform
 
+from data.data import breeding_locations
+
 
 class NestDistance():
     """
@@ -22,15 +24,20 @@ class NestDistance():
         self.df = self._loadData()
         self.dist = self._distanceMatrix(self.df)
     
+#    def _loadData(self):
+#        # Load the raw data
+#        fname = '../data/raw/training_set_observations.csv'
+#        try:
+#            df = pd.read_csv(fname, usecols=['site_id', 'longitude_epsg_4326', 'latitude_epsg_4326'])
+#        except IOError:
+#            raise IOError("You need to download and place the 'training_set_observations.csv' file into the 'data/raw' folder")
+#    
+#        df.drop_duplicates(inplace=True)
+#        return(df)
+        
     def _loadData(self):
-        # Load the raw data
-        fname = '../data/raw/training_set_observations.csv'
-        try:
-            df = pd.read_csv(fname, usecols=['site_id', 'longitude_epsg_4326', 'latitude_epsg_4326'])
-        except IOError:
-            raise IOError("You need to download and place the 'training_set_observations.csv' file into the 'data/raw' folder")
-    
-        df.drop_duplicates(inplace=True)
+        df = breeding_locations()
+        #df.reset_index(inplace=True) # make compatible with the earlier version for now
         return(df)
     
     def _distanceMatrix(self, df):
@@ -45,7 +52,8 @@ class NestDistance():
         dist = squareform(pdist(data, metric=metric))
         
         # Place the array in a DataFrame
-        dist = pd.DataFrame(dist, index=list(df['site_id']), columns=list(df['site_id']))
+        #dist = pd.DataFrame(dist, index=list(df['site_id']), columns=list(df['site_id']))
+        dist = pd.DataFrame(dist, index=list(df.index), columns=list(df.index))
         
         return(dist)
     

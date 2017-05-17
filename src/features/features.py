@@ -5,12 +5,15 @@ Created on Thu May  4 15:17:30 2017
 @author: nberliner
 """
 import numpy as np
+import pandas as pd
+
+from features.seaIce import get_seaIce
 
 from utils.NestDistance import NestDistance
 from utils.utils import get_ts_steps
 
 
-def add_features(df_features, radius):
+def add_features(df_features, radius, agg_type, padding):
     """
     Top-level function to add all desined features to the feature DataFrame
     containing the time-series information.
@@ -19,7 +22,31 @@ def add_features(df_features, radius):
     # A bit inefficient to re-compute but convenient
     nest_distance = NestDistance()
     
+    # Add the species information
+    df_features = add_species(df_features)
+    
+    # Add the proximity nest count data
     df_features = add_proximity_nestCount(df_features, radius, nest_distance)
+    
+    # Add the sea ice data
+    df_features = add_seaIce(df_features, agg_type, padding)
+    
+    return(df_features)
+
+
+def add_species(df_features):
+    # These are the species of each row
+    species = df_features.reset_index()['species']
+
+    # Create the categories for the species
+    categories = np.zeros((species.shape[0],3))
+    categories[:,0] = species == 'adelie penguin'
+    categories[:,1] = species == 'chinstrap penguin'
+    categories[:,2] = species == 'gentoo penguin'
+
+    # Assemble the DataFrame and add it to the features
+    df = pd.DataFrame(categories, index=df_features.index, columns=['adelie penguin', 'chinstrap penguin', 'gentoo penguin'])
+    df_features = pd.concat([df_features, df], axis=1)
     
     return(df_features)
 
@@ -66,4 +93,20 @@ def add_proximity_nestCount(df_features, radius, nest_distance):
     df_features = df_features.assign(proximityNestCountChange = values)
     df_features = df_features.assign(siteCount = siteCount)
     
+    return(df_features)
+
+    
+
+def add_seaIce(df_features, agg_type, padding=1):
+    # Obtain the sea ice values
+    seaIce = get_seaIce(agg_type, padding=padding)
+    
+    # Assemble a DataFrame with the sea ice
+    tmp = df_features.reset_index()
+    vals = np.array([ seaIce[key] for key in zip(tmp['site_id'], tmp['year']) ])
+    
+    seaIceCol = [ 'sea_ice_px_%i'%i for i in range(vals.shape[1]) ]
+    df_seaIce = pd.DataFrame(vals, index=df_features.index, columns=seaIceCol)
+    
+    df_features = pd.concat([df_features, df_seaIce], axis=1)
     return(df_features)

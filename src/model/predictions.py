@@ -79,7 +79,7 @@ def model_predict(df_features, model):
     return(y_pred)
     
 
-def predict(df_features, steps, model, radius):
+def predict(df_features, steps, model, radius, agg_type, padding):
     """
     Predicts for all entries and df_feature and steps into the future. The
     predicted values will be taken as input to predict the subsequent years.
@@ -96,7 +96,7 @@ def predict(df_features, steps, model, radius):
         df_lastYear = select_last_year(df_features)
 
         # We already have the y_true values for the last available year, i.e. first shift the data
-        df_pred = shift(df_lastYear, radius)
+        df_pred = shift(df_lastYear, radius, agg_type, padding)
 
         # Predict the counts, they will be added to y_true for next years shift
         y_pred = model_predict(df_pred, model)
@@ -104,20 +104,25 @@ def predict(df_features, steps, model, radius):
         df_pred.loc[:,'y_pred'] = y_pred
         
         # Add the new predictions to the DataFrame
-        df_pred.set_index(['site_id', 'species', 'year'], inplace=True)
+        #df_pred.set_index(['site_id', 'species', 'year'], inplace=True)
         df_features = pd.concat([df_features, df_pred], axis=0)
     
     return(df_features)
     
     
-def shift(df_features, radius):
+def shift(df_features, radius, agg_type, padding):
     """
     Shift the feature DataFrame so that the predicted value will become the
     value of the past year etc. This will need to recompute the added features
     and teh radius parameter thus needs to be specified.
     """
-    #ts_steps = [ item for item in df_features.columns if len(item)==2 and item[0] == 't' ]
+    # Select the time steps
     ts_steps = get_ts_steps(df_features)
+    
+    # Remove any additional features (they will be re-computed)
+    keepColumns = ['y_true', 'inferred_y_true', 'inferred_t', 'countError']
+    keepColumns.extend(get_ts_steps(df_features))
+    df_features = df_features[keepColumns].copy()
     
     # Shift the count data
     for i in range(len(ts_steps)-1):
@@ -129,15 +134,16 @@ def shift(df_features, radius):
     df_features.loc[:,'y_true'] = np.nan
     df_features.loc[:,'inferred_y_true'] = np.nan
     
-    # Recomute the features
-    #radius = 2
-    df_features = add_features(df_features, radius)
+    # Recomute the features. This has to be done bevore advancing the year,
+    # as the features should be of the past year and not the current!
+    df_features = add_features(df_features, radius, agg_type, padding)
     
     # Advance the year index
     df_features.reset_index(inplace=True)
     year = str(int(df_features.loc[:,'year'][0])+1)
     df_features.loc[:,'year'] = year
-    df_features.set_index(['site_id', 'species', 'year'])
+    df_features.set_index(['site_id', 'species', 'year'], inplace=True)
+
     
     return(df_features)
 

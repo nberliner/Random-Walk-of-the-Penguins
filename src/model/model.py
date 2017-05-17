@@ -55,12 +55,12 @@ def keras_amape(accuracies):
     return(loss)
     
 
-def get_model(ts_steps):
+def get_model(ts_steps, aux_input_size):
     """
     Define the model structure to be used.
     """
     ts_input = Input(shape=(ts_steps,1), dtype='float32', name='ts_input')
-    aux_input = Input(shape=(2,), dtype='float32', name='aux_input')
+    aux_input = Input(shape=(aux_input_size,), dtype='float32', name='aux_input')
     acc_input = Input(shape=(1,), dtype='float32', name='acc_input')
     
     # Create the SimpleRNN layer
