@@ -4,6 +4,7 @@ Created on Wed May  3 11:38:14 2017
 
 @author: nberliner
 """
+import numpy as np
 import pandas as pd
 
 from geopy.distance import vincenty
@@ -23,39 +24,33 @@ class NestDistance():
         
         self.df = self._loadData()
         self.dist = self._distanceMatrix(self.df)
-    
-#    def _loadData(self):
-#        # Load the raw data
-#        fname = '../data/raw/training_set_observations.csv'
-#        try:
-#            df = pd.read_csv(fname, usecols=['site_id', 'longitude_epsg_4326', 'latitude_epsg_4326'])
-#        except IOError:
-#            raise IOError("You need to download and place the 'training_set_observations.csv' file into the 'data/raw' folder")
-#    
-#        df.drop_duplicates(inplace=True)
-#        return(df)
-        
+            
     def _loadData(self):
         df = breeding_locations()
         #df.reset_index(inplace=True) # make compatible with the earlier version for now
         return(df)
     
     def _distanceMatrix(self, df):
-        # Keep only the latitude and longitude information
-        # Note that latitude comes first!
-        data = df[['latitude_epsg_4326', 'longitude_epsg_4326']].values
+        fname = '../data/interim/nest_distMat.npy'
+        try:
+            distMat = np.load(fname)
+            print("Found nest count pre-computed distance matrix in data/interim")
+        except IOError:
+            # Keep only the latitude and longitude information
+            # Note that latitude comes first!
+            data = df[['latitude_epsg_4326', 'longitude_epsg_4326']].values
+            
+            # Define the distance function
+            metric = lambda lat, lng: vincenty(lat, lng).meters / 1000. # in kilometers
+            
+            # Compute the full distance matrix
+            dist = squareform(pdist(data, metric=metric))
+            
+            # Place the array in a DataFrame
+            distMat = pd.DataFrame(dist, index=list(df.index), columns=list(df.index))
+            np.save(fname, distMat)
         
-        # Define the distance function
-        metric = lambda lat, lng: vincenty(lat, lng).meters / 1000. # in kilometers
-        
-        # Compute the full distance matrix
-        dist = squareform(pdist(data, metric=metric))
-        
-        # Place the array in a DataFrame
-        #dist = pd.DataFrame(dist, index=list(df['site_id']), columns=list(df['site_id']))
-        dist = pd.DataFrame(dist, index=list(df.index), columns=list(df.index))
-        
-        return(dist)
+        return(distMat)
     
     def query(self, site_id, radius):
         try:

@@ -41,10 +41,10 @@ def compute_closestPixel(lats, longs):
     # Compute the distance matrix
     fname = '../data/interim/sea_ice_distMat.npy'
     try:
-        print("Loading distMat from data/interim/")
+        print("Loading sea ice distMat from data/interim/")
         distMat = np.load(fname)
     except IOError:
-        print("Computing distMat and caching result in data/interim/")
+        print("Computing sea ice distMat and caching result in data/interim/")
         print("This can take a while.. (apologies for computing this via brute force)")
         distMat = compute_distMat(df_locations, lats, longs)
         np.save(fname, distMat)
@@ -63,33 +63,33 @@ def compute_closestPixel(lats, longs):
     
 
 
-def compute_aggregate_sea_ice(tiffValues, agg='average'):
-    # Store the result in a new array. Use the first axis for the years, the rest are the dimensions of the image
-    sea_ice = np.zeros((37, 332, 316))
-    
-    for i, year in enumerate(range(1980,2017)):
-        # Check if the agg is defined
-        if not agg in ['average', 'median', 'max', 'min']:
-            raise ValueError('agg %s not defined' %agg)
-        
-        
-        # Put all the values in an array and use the first axis to compute the agg
-        vals = np.array([ tiffValues[tiff] for tiff in sea_ice_filenames(year) ])
-        
-        if agg == 'average':
-            arr = np.average(vals, axis=0)
-        elif agg == 'median':
-            arr = np.median(vals, axis=0)
-        elif agg == 'max':
-            arr = np.max(vals, axis=0)
-        elif agg == 'min':
-            arr = np.min(vals, axis=0)
-        else:
-            raise ValueError('This is bad. We should never arrive here!')
-        
-        sea_ice[i,:,:] = arr
-    
-    return(sea_ice)
+#def compute_aggregate_sea_ice(tiffValues, agg='average'):
+#    # Store the result in a new array. Use the first axis for the years, the rest are the dimensions of the image
+#    sea_ice = np.zeros((37, 332, 316))
+#    
+#    for i, year in enumerate(range(1980,2017)):
+#        # Check if the agg is defined
+#        if not agg in ['average', 'median', 'max', 'min']:
+#            raise ValueError('agg %s not defined' %agg)
+#        
+#        
+#        # Put all the values in an array and use the first axis to compute the agg
+#        vals = np.array([ tiffValues[tiff] for tiff in sea_ice_filenames(year) ])
+#        
+#        if agg == 'average':
+#            arr = np.average(vals, axis=0)
+#        elif agg == 'median':
+#            arr = np.median(vals, axis=0)
+#        elif agg == 'max':
+#            arr = np.max(vals, axis=0)
+#        elif agg == 'min':
+#            arr = np.min(vals, axis=0)
+#        else:
+#            raise ValueError('This is bad. We should never arrive here!')
+#        
+#        sea_ice[i,:,:] = arr
+#    
+#    return(sea_ice)
 
 
 
@@ -108,42 +108,42 @@ def select_subarray(array, row, col, pad=1):
     return(val)
 
 
-def assemble_sea_ice(df_closestPixel, values, padding=1, flatten=True):
-    """
-    Compute the sea ice feature for each site id and year. The result will be
-    a dictionary that can be used as fast lookup for adding the feature to the
-    data. 
-    """
-    # Create the new DataFrame holding the data
-    years = [ year for year in range(1980,2017) ]
-    site_ids = list(df_closestPixel.index)
-    
-    seaIce = dict()
-    for site_id in site_ids:
-        for idx, year in enumerate(years):
-            # Extract the sea ice data
-            row, col = df_closestPixel.loc[site_id]
-            feature = select_subarray(values[idx,:,:], row, col, pad=padding)
-            
-            # Flatten the array if requested
-            if flatten:
-                feature = feature.flatten()
-            
-            # Keep the result in a dictionary
-            seaIce[(site_id, str(year))] = feature
-    
-    return(seaIce)
+#def assemble_sea_ice(df_closestPixel, values, padding=1, flatten=True):
+#    """
+#    Compute the sea ice feature for each site id and year. The result will be
+#    a dictionary that can be used as fast lookup for adding the feature to the
+#    data. 
+#    """
+#    # Create the new DataFrame holding the data
+#    years = [ year for year in range(1980,2017) ]
+#    site_ids = list(df_closestPixel.index)
+#    
+#    seaIce = dict()
+#    for site_id in site_ids:
+#        for idx, year in enumerate(years):
+#            # Extract the sea ice data
+#            row, col = df_closestPixel.loc[site_id]
+#            feature = select_subarray(values[idx,:,:], row, col, pad=padding)
+#            
+#            # Flatten the array if requested
+#            if flatten:
+#                feature = feature.flatten()
+#            
+#            # Keep the result in a dictionary
+#            seaIce[(site_id, str(year))] = feature
+#    
+#    return(seaIce)
     
 
-def sea_ice_agg_window(df_closestPixel, tiffValues, agg_type, padding, flatten):
-    """
-    Compute an aggregate for each pixel over the year. The location values
-    will then be returned as flatten array.
-    """
-    # Compute the aggregate of the tiff values (final result will be a dict)
-    seaIce = compute_aggregate_sea_ice(tiffValues, agg=agg_type)
-    seaIce = assemble_sea_ice(df_closestPixel, seaIce, padding=padding, flatten=flatten)
-    return(seaIce)
+#def sea_ice_agg_window(df_closestPixel, tiffValues, agg_type, padding, flatten):
+#    """
+#    Compute an aggregate for each pixel over the year. The location values
+#    will then be returned as flatten array.
+#    """
+#    # Compute the aggregate of the tiff values (final result will be a dict)
+#    seaIce = compute_aggregate_sea_ice(tiffValues, agg=agg_type)
+#    seaIce = assemble_sea_ice(df_closestPixel, seaIce, padding=padding, flatten=flatten)
+#    return(seaIce)
     
 
 def sea_ice_agg_time(df_closestPixel, tiffValues, padding=1):
@@ -185,9 +185,9 @@ def sea_ice_agg_time(df_closestPixel, tiffValues, padding=1):
     
 
 
-def get_seaIce(agg_type, padding=1, flatten=True):
+def get_seaIce(padding):
     
-    fname = "../data/interim/seaIce_%s_%i.p" %(agg_type, padding)
+    fname = "../data/interim/seaIce_data.p"
     
     try:
         seaIce = pickle.load(open(fname, "rb" ))
@@ -199,12 +199,7 @@ def get_seaIce(agg_type, padding=1, flatten=True):
         # Compte the closest pixel for each location
         df_closestPixel = compute_closestPixel(lats, longs)
         
-        # Compute the aggregate of the tiff values (final result will be a dict)
-#        seaIce = compute_aggregate_sea_ice(tiffValues, agg=agg_type)
-#        seaIce = assemble_sea_ice(df_closestPixel, seaIce, padding=padding, flatten=flatten)
-        
-        # Inputing the montly values seems to work much better than computing an agregate over time
-        #seaIce = sea_ice_agg_window(df_closestPixel, tiffValues, agg_type, padding, flatten)
+        # Compute the sea ice data (final result will be a dict)
         seaIce = sea_ice_agg_time(df_closestPixel, tiffValues, padding=padding)
         
         # Cache the result

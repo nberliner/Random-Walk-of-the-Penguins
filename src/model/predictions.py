@@ -8,8 +8,8 @@ Created on Thu May  4 16:33:46 2017
 import numpy as np
 import pandas as pd
 
-from data.data import load_submissions
-from features.features import add_features
+from data.data import load_submissions, load_nest_counts
+#from features.features import add_features
 from utils.utils import get_ts_steps
 
 
@@ -79,7 +79,8 @@ def model_predict(df_features, model):
     return(y_pred)
     
 
-def predict(df_features, steps, model, radius, agg_type, padding):
+#def predict(df_features, steps, model, radius, agg_type, padding):
+def predict(df_features, steps, model, features):
     """
     Predicts for all entries and df_feature and steps into the future. The
     predicted values will be taken as input to predict the subsequent years.
@@ -96,7 +97,7 @@ def predict(df_features, steps, model, radius, agg_type, padding):
         df_lastYear = select_last_year(df_features)
 
         # We already have the y_true values for the last available year, i.e. first shift the data
-        df_pred = shift(df_lastYear, radius, agg_type, padding)
+        df_pred = shift(df_lastYear, features)
 
         # Predict the counts, they will be added to y_true for next years shift
         y_pred = model_predict(df_pred, model)
@@ -110,7 +111,8 @@ def predict(df_features, steps, model, radius, agg_type, padding):
     return(df_features)
     
     
-def shift(df_features, radius, agg_type, padding):
+#def shift(df_features, radius, agg_type, padding):
+def shift(df_features, features):
     """
     Shift the feature DataFrame so that the predicted value will become the
     value of the past year etc. This will need to recompute the added features
@@ -136,7 +138,8 @@ def shift(df_features, radius, agg_type, padding):
     
     # Recomute the features. This has to be done bevore advancing the year,
     # as the features should be of the past year and not the current!
-    df_features = add_features(df_features, radius, agg_type, padding)
+#    df_features = add_features(df_features, radius, agg_type, padding)
+    df_features = features.add_features(df_features)
     
     # Advance the year index
     df_features.reset_index(inplace=True)
@@ -185,9 +188,12 @@ class AMAPE():
     """
     Compute the AMAPE score for all predictions.
     """
-    def __init__(self):
+    def __init__(self, interpolated=False):
         
-        self.df_nestCount, self.df_nestCountError = self._loadData()
+        if interpolated:
+            self.df_nestCount, self.df_nestCountError = load_nest_counts()
+        else:
+            self.df_nestCount, self.df_nestCountError = self._loadData()
         
     def _loadData(self):
         fname_count = '../data/raw/training_set_nest_counts.csv'
@@ -209,7 +215,7 @@ class AMAPE():
         
         return(df_nestCount, df_nestCountError)
     
-    def _amape(self, y_true, y_pred, accuracies):
+    def _amape(self, y_true, y_pred, accuracies, detailed=False):
         """ Adjusted MAPE
         """
         not_nan_mask = ~np.isnan(y_true)
@@ -225,9 +231,12 @@ class AMAPE():
         adj_error = pct_error / accuracies[not_nan_mask]
 
         # return the mean as a percentage
-        return np.mean(adj_error)
+        if detailed:
+            return adj_error
+        else:
+            return np.mean(adj_error)
 
-    def _compute(self, predictions):
+    def _compute(self, predictions, detailed=False):
         try:
             y_true = self.df_nestCount.loc[:,predictions.name]
             accuracies = self.df_nestCountError.loc[:,predictions.name]
@@ -237,10 +246,10 @@ class AMAPE():
         predictions.sort_index(inplace=True)
         assert(all(predictions.index == self.df_nestCount.index))
         
-        score = self._amape(predictions, y_true, accuracies)
+        score = self._amape(predictions, y_true, accuracies, detailed=detailed)
         return(score)
     
-    def __call__(self, df_pred):
+    def amape(self, df_pred):
         scores = list()
         for year in df_pred.columns:
             scores.append(self._compute(df_pred.loc[:,year]))
@@ -248,3 +257,6 @@ class AMAPE():
         scores = pd.DataFrame({'AMAPE': scores}, index=df_pred.columns)
             
         return(scores)
+    
+    def amape_detailed(self, df_pred, year):
+        return(self._compute(df_pred.loc[:,year], detailed=True))

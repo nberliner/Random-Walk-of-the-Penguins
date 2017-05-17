@@ -8,30 +8,47 @@ import numpy as np
 import pandas as pd
 
 from features.seaIce import get_seaIce
+from features.krillbase import KrillBase
 
 from utils.NestDistance import NestDistance
 from utils.utils import get_ts_steps
 
 
-def add_features(df_features, radius, agg_type, padding):
-    """
-    Top-level function to add all desined features to the feature DataFrame
-    containing the time-series information.
-    """
+class Features():
     
-    # A bit inefficient to re-compute but convenient
-    nest_distance = NestDistance()
-    
-    # Add the species information
-    df_features = add_species(df_features)
-    
-    # Add the proximity nest count data
-    df_features = add_proximity_nestCount(df_features, radius, nest_distance)
-    
-    # Add the sea ice data
-    df_features = add_seaIce(df_features, agg_type, padding)
-    
-    return(df_features)
+    def __init__(self, krill_radius, nestCount_radius, padding):
+        
+        self.krill_radius = krill_radius
+        self.nestCount_radius = nestCount_radius
+        self.padding = padding
+        
+        self.nest_distance = NestDistance()
+        
+        self.seaIce = get_seaIce(padding)
+        
+        self.krillbase = KrillBase()
+        self.krillbase.create(krill_radius)
+
+    def add_features(self, df_features):
+        """
+        Top-level function to add all desined features to the feature DataFrame
+        containing the time-series information.
+        """
+        # Add the species information
+        df_features = add_species(df_features)
+        
+        # Add the proximity nest count data
+        df_features = add_proximity_nestCount(df_features, self.nestCount_radius, self.nest_distance)
+        
+        # Add the sea ice data
+        df_features = add_seaIce(df_features, self.seaIce)
+        
+        # Add the krill data
+        df_features = add_krill(df_features, self.krillbase)
+        
+        return(df_features)
+
+
 
 
 def add_species(df_features):
@@ -97,10 +114,21 @@ def add_proximity_nestCount(df_features, radius, nest_distance):
 
     
 
-def add_seaIce(df_features, agg_type, padding=1):
-    # Obtain the sea ice values
-    seaIce = get_seaIce(agg_type, padding=padding)
-    
+#def add_seaIce(df_features, agg_type, padding=1):
+#    # Obtain the sea ice values
+#    seaIce = get_seaIce(agg_type, padding=padding)
+#    
+#    # Assemble a DataFrame with the sea ice
+#    tmp = df_features.reset_index()
+#    vals = np.array([ seaIce[key] for key in zip(tmp['site_id'], tmp['year']) ])
+#    
+#    seaIceCol = [ 'sea_ice_px_%i'%i for i in range(vals.shape[1]) ]
+#    df_seaIce = pd.DataFrame(vals, index=df_features.index, columns=seaIceCol)
+#    
+#    df_features = pd.concat([df_features, df_seaIce], axis=1)
+#    return(df_features)
+
+def add_seaIce(df_features, seaIce):
     # Assemble a DataFrame with the sea ice
     tmp = df_features.reset_index()
     vals = np.array([ seaIce[key] for key in zip(tmp['site_id'], tmp['year']) ])
@@ -110,3 +138,10 @@ def add_seaIce(df_features, agg_type, padding=1):
     
     df_features = pd.concat([df_features, df_seaIce], axis=1)
     return(df_features)
+
+
+def add_krill(df_features, krillbase):
+    vals = [ krillbase.query(site_id, int(year)) for (site_id, _, year) in list(df_features.index) ]
+    df_features = df_features.assign(krill=vals)
+    return(df_features)
+    
