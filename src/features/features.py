@@ -133,7 +133,7 @@ def add_seaIce(df_features, seaIce):
     tmp = df_features.reset_index()
     vals = np.array([ seaIce[key] for key in zip(tmp['site_id'], tmp['year']) ])
     
-    seaIceCol = [ 'sea_ice_px_%i'%i for i in range(vals.shape[1]) ]
+    seaIceCol = [ 'sea_ice_month_%i'%i for i in range(vals.shape[1]) ]
     df_seaIce = pd.DataFrame(vals, index=df_features.index, columns=seaIceCol)
     
     df_features = pd.concat([df_features, df_seaIce], axis=1)
