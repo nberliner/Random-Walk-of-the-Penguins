@@ -15,17 +15,31 @@ from utils.utils import get_ts_steps
 
 ### Fit the model
 
-def fit_model(df_features, model, epochs=5, batch_size=128):
+def fit_model(df_train, model, validation_data=None, epochs=5, batch_size=128, verbose=1):
     """
     Fit the model to all entries in df_features.
     """
-    dat_x, aux_input, acc_input, dat_y = assemble_model_input(df_features)
+    # Prepare the train data
+    dat_x, dat_seaIce, aux_input, acc_input, dat_y = assemble_model_input(df_train)
     
-    model.fit({'ts_input': dat_x, 'aux_input': aux_input, 'acc_input': acc_input},
-          {'main_output': dat_y},
-          epochs=epochs, batch_size=batch_size)
+    # Prepare the test data
+    if validation_data is not None:
+        dat_x_t, dat_seaIce_t, aux_input_t, acc_input_t, dat_y_t = assemble_model_input(validation_data)
+        
+        x_test = {'ts_input': dat_x_t, 'seaIce_input': dat_seaIce_t, 'aux_input': aux_input_t, 
+                   'acc_input': acc_input_t}
+        y_test = {'main_output': dat_y_t}
+        
+        validation_data = (x_test, y_test)
     
-    return(model)
+    history = model.fit({'ts_input': dat_x, 'seaIce_input': dat_seaIce, 'aux_input': aux_input, 
+                         'acc_input': acc_input},
+                        {'main_output': dat_y},
+                        epochs=epochs, batch_size=batch_size, 
+                        validation_data=validation_data,
+                        verbose=verbose)
+    
+    return(model, history)
     
 
 def assemble_model_input(df_features):
@@ -34,14 +48,19 @@ def assemble_model_input(df_features):
     This function will take the feature DataFrame and compile the groups.
     """
     # Extract the time series columns
-    #ts_steps = [ item for item in df_features.columns if len(item)==2 and item[0] == 't' ]
     ts_steps = get_ts_steps(df_features)
     dat_x = df_features.loc[:,ts_steps].values[:,:,np.newaxis]
+    
+    # Extract the sea ice data
+    seaIceCol = [ 'sea_ice_month_%i'%i for i in range(12) ]
+    dat_seaIce = df_features.loc[:,seaIceCol].values
     
     # Extract the auxiliary input columns
     ignore = ['y_true', 'inferred_y_true', 'inferred_t', 'countError', 'y_pred', 
               'site_id', 'species', 'year']
-    aux_cols = [ item for item in df_features.columns if item not in ts_steps and item not in ignore ]
+    ignore.extend(ts_steps)
+    ignore.extend(seaIceCol)
+    aux_cols = [ item for item in df_features.columns if item not in ignore ]
     aux_input = df_features.loc[:,aux_cols].values
     
     # Extract the e_n error column
@@ -50,7 +69,7 @@ def assemble_model_input(df_features):
     # Extract the true nest count
     dat_y = df_features.loc[:,'y_true'].values
     
-    return(dat_x, aux_input, acc_input, dat_y)
+    return(dat_x, dat_seaIce, aux_input, acc_input, dat_y)
 
 
 
@@ -71,10 +90,10 @@ def select_last_year(df_features):
     
 def model_predict(df_features, model):
     # Assemble the data
-    dat_x, aux_input, acc_input, dat_y = assemble_model_input(df_features)
+    dat_x, dat_seaIce, aux_input, acc_input, dat_y = assemble_model_input(df_features)
     
     # Run the prediction
-    y_pred = model.predict({'ts_input': dat_x, 'aux_input': aux_input, 'acc_input': acc_input})
+    y_pred = model.predict({'ts_input': dat_x, 'seaIce_input': dat_seaIce, 'aux_input': aux_input, 'acc_input': acc_input})
     
     return(y_pred)
     
@@ -178,7 +197,14 @@ def assemble_submission(df_predictions):
     df_submissions_format = load_submissions()
     df_submissions = df_predictions.loc[:,['2014', '2015', '2016', '2017']]
     
+    # Need to change 'species'to 'common name'
+    df_submissions.reset_index(inplace=True)
+    df_submissions.columns = ['site_id','common_name','2014','2015','2016','2017']
+    df_submissions.set_index(['site_id','common_name'], inplace=True)
+    
     _, df_submissions = df_submissions_format.align(df_submissions, join='left', axis=0)
+    
+    assert(~any(df_submissions.isnull()))
     
     return(df_submissions)
     
@@ -191,7 +217,7 @@ class AMAPE():
     def __init__(self, interpolated=False):
         
         if interpolated:
-            self.df_nestCount, self.df_nestCountError = load_nest_counts()
+            self.df_nestCount, self.df_nestCountError, _ = load_nest_counts()
         else:
             self.df_nestCount, self.df_nestCountError = self._loadData()
         
@@ -246,7 +272,7 @@ class AMAPE():
         predictions.sort_index(inplace=True)
         assert(all(predictions.index == self.df_nestCount.index))
         
-        score = self._amape(predictions, y_true, accuracies, detailed=detailed)
+        score = self._amape(y_true, predictions, accuracies, detailed=detailed)
         return(score)
     
     def amape(self, df_pred):

@@ -4,6 +4,7 @@ Created on Wed May  3 11:38:14 2017
 
 @author: nberliner
 """
+
 import numpy as np
 import pandas as pd
 
@@ -33,7 +34,8 @@ class NestDistance():
     def _distanceMatrix(self, df):
         fname = '../data/interim/nest_distMat.npy'
         try:
-            distMat = np.load(fname)
+            dist = np.load(fname)
+            distMat = pd.DataFrame(dist, index=list(df.index), columns=list(df.index))
             print("Found nest count pre-computed distance matrix in data/interim")
         except IOError:
             # Keep only the latitude and longitude information
@@ -45,10 +47,11 @@ class NestDistance():
             
             # Compute the full distance matrix
             dist = squareform(pdist(data, metric=metric))
+            np.save(fname, dist)
             
             # Place the array in a DataFrame
             distMat = pd.DataFrame(dist, index=list(df.index), columns=list(df.index))
-            np.save(fname, distMat)
+            
         
         return(distMat)
     
