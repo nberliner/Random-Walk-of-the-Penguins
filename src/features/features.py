@@ -9,6 +9,7 @@ import pandas as pd
 
 from features.seaIce import get_seaIce
 from features.krillbase import KrillBase
+from features.temperature import Temperature
 
 from utils.NestDistance import NestDistance
 from utils.utils import get_ts_steps
@@ -28,6 +29,8 @@ class Features():
         
         self.krillbase = KrillBase()
         self.krillbase.create(krill_radius)
+        
+        self.temperature = Temperature()
 
     def add_features(self, df_features):
         """
@@ -45,6 +48,9 @@ class Features():
         
         # Add the krill data
         df_features = add_krill(df_features, self.krillbase)
+        
+        # Add the temperature data
+        df_features = add_temperature(df_features, self.temperature)
         
         return(df_features)
 
@@ -144,4 +150,15 @@ def add_krill(df_features, krillbase):
     vals = [ krillbase.query(site_id, int(year)) for (site_id, _, year) in list(df_features.index) ]
     df_features = df_features.assign(krill=vals)
     return(df_features)
+
+
+def add_temperature(df_features, temperature):
+    # Get the lat, lon positions of the locations
+    tmp = df_features.reset_index()
+    vals = np.array([ temperature.query(site_id, int(year)) for site_id, year in zip(tmp['site_id'], tmp['year']) ])
     
+    tempCol = [ 'temp_month_%i'%i for i in range(vals.shape[1]) ]
+    df_temp = pd.DataFrame(vals, index=df_features.index, columns=tempCol)
+    
+    df_features = pd.concat([df_features, df_temp], axis=1)
+    return(df_features)

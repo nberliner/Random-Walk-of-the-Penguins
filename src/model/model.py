@@ -56,6 +56,118 @@ def keras_amape(accuracies):
     return(loss)
     
 
+#def get_model(ts_steps, aux_input_size):
+#    """
+#    Define the model structure to be used.
+#    """
+#    ts_input = Input(shape=(ts_steps,1), dtype='float32', name='ts_input')
+#    
+#    seaIce_input = Input(shape=(12,), dtype='float32', name='seaIce_input')
+#    temperature_input = Input(shape=(12,), dtype='float32', name='temperature_input')
+#    aux_input = Input(shape=(aux_input_size,), dtype='float32', name='aux_input')
+#    acc_input = Input(shape=(1,), dtype='float32', name='acc_input')
+#    
+#
+#    # Create the SimpleRNN layer
+#    rnn_out = SimpleRNN(1)(ts_input) #, input_shape=(32,4,1)
+#    
+##    y = SimpleRNN(3)(ts_input) #, input_shape=(32,4,1)
+##    rnn_out = Dense(1, activation='relu')(y)
+#    
+#    
+#    # Create a dense layer above the sea ice
+##    y = Dense(3, activation='relu')(seaIce_input)
+##    seaIce_output = Dense(1, activation='relu')(y)
+#    
+#    seaIce_output = Dense(1, activation='relu')(seaIce_input)
+#    
+#    temperature_output = Dense(1, activation='relu')(temperature_input)
+##    z = Dense(3, activation='relu')(temperature_input)
+##    temperature_output = Dense(1, activation='relu')(z)
+#    
+#    # combine with the extra input
+#    x = ks.layers.concatenate([rnn_out, aux_input, seaIce_output, temperature_output])
+#    
+#    # We stack a deep densely-connected network on top
+#    x = Dense(32, activation='relu')(x)
+#    x = Dropout(.2)(x)
+#    x = Dense(32, activation='relu')(x)
+#    x = Dropout(.2)(x)
+##    x = Dense(16, activation='relu')(x)
+##    x = Dropout(.2)(x)
+##    x = Dense(32, activation='relu')(x)
+##    x = Dense(16, activation='relu')(x)
+#    
+#    # And finally we add the main logistic regression layer
+#    main_output = Dense(1, activation='relu', name='main_output')(x)
+#    
+#    model = Model(inputs=[ts_input, seaIce_input, temperature_input, aux_input, acc_input], outputs=main_output)
+#    
+#    # Define the optimizer
+#    rmsprop = ks.optimizers.RMSprop(lr=0.001)
+##    adam = ks.optimizers.Adam(lr=0.0001)
+##    model.compile(optimizer='rmsprop', loss=keras_amape(acc_input))
+#    model.compile(optimizer=rmsprop, loss=keras_amape(acc_input))
+#    
+#    return(model)
+
+
+
+## Second one    
+#def get_model(ts_steps, aux_input_size):
+#    """
+#    Define the model structure to be used.
+#    """
+#    ts_input = Input(shape=(ts_steps,1), dtype='float32', name='ts_input')
+#    
+#    seaIce_input = Input(shape=(12,), dtype='float32', name='seaIce_input')
+#    temperature_input = Input(shape=(12,), dtype='float32', name='temperature_input')
+#    aux_input = Input(shape=(aux_input_size,), dtype='float32', name='aux_input')
+#    acc_input = Input(shape=(1,), dtype='float32', name='acc_input')
+#    
+#
+#    # Create the SimpleRNN layer
+#    rnn_out = SimpleRNN(1)(ts_input) #, input_shape=(32,4,1)
+#    
+#    # Create a dense layer above the sea ice
+#    y = Dropout(.2)(seaIce_input)
+#    y = Dense(3, activation='relu')(y)
+#    seaIce_output = Dense(1, activation='relu')(y)
+#
+#    # Temperature layer
+#    z = Dropout(.2)(temperature_input)
+#    z = Dense(3, activation='relu')(z)
+#    temperature_output = Dense(1, activation='relu')(z)
+#
+#    # Combine the aux input
+#    xx = ks.layers.concatenate([aux_input, seaIce_output, temperature_output])
+#    xx = Dense(8, activation='relu')(xx)
+#    xx = Dropout(.2)(xx)
+#    xx = Dense(8, activation='relu')(xx)
+#    xx = Dropout(.2)(xx)
+#    xx = Dense(1, activation='relu')(xx)
+#    
+#    # combine with the extra input
+#    x = ks.layers.concatenate([rnn_out, xx])
+#    
+#    # We stack a deep densely-connected network on top
+#    x = Dense(8, activation='relu')(x)
+#    x = Dropout(.2)(x)
+#    x = Dense(8, activation='relu')(x)
+#    x = Dropout(.2)(x)
+#    
+#    # And finally we add the main logistic regression layer
+#    main_output = Dense(1, activation='relu', name='main_output')(x)
+#    
+#    model = Model(inputs=[ts_input, seaIce_input, temperature_input, aux_input, acc_input], outputs=main_output)
+#    
+#    # Define the optimizer
+#    rmsprop = ks.optimizers.RMSprop(lr=0.0005)
+#    model.compile(optimizer=rmsprop, loss=keras_amape(acc_input))
+#    
+#    return(model)
+    
+    
 def get_model(ts_steps, aux_input_size):
     """
     Define the model structure to be used.
@@ -63,44 +175,50 @@ def get_model(ts_steps, aux_input_size):
     ts_input = Input(shape=(ts_steps,1), dtype='float32', name='ts_input')
     
     seaIce_input = Input(shape=(12,), dtype='float32', name='seaIce_input')
+    temperature_input = Input(shape=(12,), dtype='float32', name='temperature_input')
     aux_input = Input(shape=(aux_input_size,), dtype='float32', name='aux_input')
     acc_input = Input(shape=(1,), dtype='float32', name='acc_input')
     
+
     # Create the SimpleRNN layer
-#    rnn_out = SimpleRNN(1)(ts_input) #, input_shape=(32,4,1)
-    
-    y = SimpleRNN(3)(ts_input) #, input_shape=(32,4,1)
-    rnn_out = Dense(1, activation='relu')(y)
+    r = SimpleRNN(3)(ts_input) #, input_shape=(32,4,1)
+    rnn_out = Dense(2, activation='relu')(r)
     
     
     # Create a dense layer above the sea ice
-#    y = Dense(3, activation='relu')(seaIce_input)
-#    seaIce_output = Dense(1, activation='relu')(y)
+    y = Dropout(.2)(seaIce_input)
+    y = Dense(3, activation='relu')(y)
+    seaIce_output = Dense(1, activation='relu')(y)
+
     
-    seaIce_output = Dense(1, activation='relu')(seaIce_input)
+    # Temperature
+    z = Dropout(.2)(temperature_input)
+    z = Dense(3, activation='relu')(z)
+    temperature_output = Dense(1, activation='relu')(z)
+
+    # Combine the aux input
+    xx = ks.layers.concatenate([aux_input, seaIce_output, temperature_output])
+    xx = Dense(16, activation='relu')(xx)
+    xx = Dropout(.4)(xx)
+    xx = Dense(8, activation='relu')(xx)
+    xx = Dropout(.2)(xx)
+    xx = Dense(3, activation='relu')(xx)
     
     # combine with the extra input
-    x = ks.layers.concatenate([rnn_out, aux_input, seaIce_output])
+    x = ks.layers.concatenate([rnn_out, xx])
     
     # We stack a deep densely-connected network on top
-    x = Dense(32, activation='relu')(x)
+    x = Dense(8, activation='relu')(x)
     x = Dropout(.2)(x)
-    x = Dense(32, activation='relu')(x)
-    x = Dropout(.2)(x)
-#    x = Dense(16, activation='relu')(x)
-#    x = Dropout(.2)(x)
-#    x = Dense(32, activation='relu')(x)
-#    x = Dense(16, activation='relu')(x)
     
     # And finally we add the main logistic regression layer
     main_output = Dense(1, activation='relu', name='main_output')(x)
     
-    model = Model(inputs=[ts_input, seaIce_input, aux_input, acc_input], outputs=main_output)
+    model = Model(inputs=[ts_input, seaIce_input, temperature_input, aux_input, acc_input], outputs=main_output)
     
     # Define the optimizer
-    rmsprop = ks.optimizers.RMSprop(lr=0.001)
-#    adam = ks.optimizers.Adam(lr=0.0001)
-#    model.compile(optimizer='rmsprop', loss=keras_amape(acc_input))
-    model.compile(optimizer=rmsprop, loss=keras_amape(acc_input))
+#    rmsprop = ks.optimizers.RMSprop(lr=0.001)
+    #model.compile(optimizer=rmsprop, loss=keras_amape(acc_input))
+    model.compile(optimizer='adam', loss=keras_amape(acc_input))
     
     return(model)

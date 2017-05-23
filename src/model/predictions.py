@@ -20,19 +20,22 @@ def fit_model(df_train, model, validation_data=None, epochs=5, batch_size=128, v
     Fit the model to all entries in df_features.
     """
     # Prepare the train data
-    dat_x, dat_seaIce, aux_input, acc_input, dat_y = assemble_model_input(df_train)
+    dat_x, dat_seaIce, dat_temperature, aux_input, acc_input, dat_y = assemble_model_input(df_train)
     
     # Prepare the test data
     if validation_data is not None:
-        dat_x_t, dat_seaIce_t, aux_input_t, acc_input_t, dat_y_t = assemble_model_input(validation_data)
+        dat_x_t, dat_seaIce_t, dat_temperature_t, aux_input_t, acc_input_t, dat_y_t = assemble_model_input(validation_data)
         
-        x_test = {'ts_input': dat_x_t, 'seaIce_input': dat_seaIce_t, 'aux_input': aux_input_t, 
+        x_test = {'ts_input': dat_x_t, 'seaIce_input': dat_seaIce_t, 'temperature_input': dat_temperature_t,
+                  'aux_input': aux_input_t, 
                    'acc_input': acc_input_t}
         y_test = {'main_output': dat_y_t}
         
         validation_data = (x_test, y_test)
     
-    history = model.fit({'ts_input': dat_x, 'seaIce_input': dat_seaIce, 'aux_input': aux_input, 
+    history = model.fit({'ts_input': dat_x, 'seaIce_input': dat_seaIce, 
+                         'temperature_input': dat_temperature,
+                         'aux_input': aux_input, 
                          'acc_input': acc_input},
                         {'main_output': dat_y},
                         epochs=epochs, batch_size=batch_size, 
@@ -55,11 +58,16 @@ def assemble_model_input(df_features):
     seaIceCol = [ 'sea_ice_month_%i'%i for i in range(12) ]
     dat_seaIce = df_features.loc[:,seaIceCol].values
     
+    # Extract the temperature data
+    tempCol = [ 'temp_month_%i'%i for i in range(12) ]
+    dat_temperature = df_features.loc[:,tempCol].values
+    
     # Extract the auxiliary input columns
     ignore = ['y_true', 'inferred_y_true', 'inferred_t', 'countError', 'y_pred', 
               'site_id', 'species', 'year']
     ignore.extend(ts_steps)
     ignore.extend(seaIceCol)
+    ignore.extend(tempCol)
     aux_cols = [ item for item in df_features.columns if item not in ignore ]
     aux_input = df_features.loc[:,aux_cols].values
     
@@ -69,7 +77,7 @@ def assemble_model_input(df_features):
     # Extract the true nest count
     dat_y = df_features.loc[:,'y_true'].values
     
-    return(dat_x, dat_seaIce, aux_input, acc_input, dat_y)
+    return(dat_x, dat_seaIce, dat_temperature, aux_input, acc_input, dat_y)
 
 
 
@@ -90,10 +98,12 @@ def select_last_year(df_features):
     
 def model_predict(df_features, model):
     # Assemble the data
-    dat_x, dat_seaIce, aux_input, acc_input, dat_y = assemble_model_input(df_features)
+    dat_x, dat_seaIce, dat_temperature, aux_input, acc_input, dat_y = assemble_model_input(df_features)
     
     # Run the prediction
-    y_pred = model.predict({'ts_input': dat_x, 'seaIce_input': dat_seaIce, 'aux_input': aux_input, 'acc_input': acc_input})
+    y_pred = model.predict({'ts_input': dat_x, 'seaIce_input': dat_seaIce, 
+                            'temperature_input': dat_temperature,
+                            'aux_input': aux_input, 'acc_input': acc_input})
     
     return(y_pred)
     
