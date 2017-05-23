@@ -218,7 +218,7 @@ def get_model(ts_steps, aux_input_size):
     
     # Define the optimizer
 #    rmsprop = ks.optimizers.RMSprop(lr=0.001)
-    #model.compile(optimizer=rmsprop, loss=keras_amape(acc_input))
-    model.compile(optimizer='adam', loss=keras_amape(acc_input))
+    model.compile(optimizer='rmsprop', loss=keras_amape(acc_input))
+#    model.compile(optimizer='adam', loss=keras_amape(acc_input))
     
     return(model)
