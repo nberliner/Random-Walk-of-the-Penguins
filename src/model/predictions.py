@@ -15,7 +15,7 @@ from utils.utils import get_ts_steps
 
 ### Fit the model
 
-def fit_model(df_train, model, validation_data=None, epochs=5, batch_size=128, verbose=1):
+def fit_model(df_train, model, validation_data=None, epochs=5, validation_split=0.0, batch_size=128, verbose=1):
     """
     Fit the model to all entries in df_features.
     """
@@ -32,6 +32,7 @@ def fit_model(df_train, model, validation_data=None, epochs=5, batch_size=128, v
         y_test = {'main_output': dat_y_t}
         
         validation_data = (x_test, y_test)
+        
     
     history = model.fit({'ts_input': dat_x, 'seaIce_input': dat_seaIce, 
                          'temperature_input': dat_temperature,
@@ -40,6 +41,7 @@ def fit_model(df_train, model, validation_data=None, epochs=5, batch_size=128, v
                         {'main_output': dat_y},
                         epochs=epochs, batch_size=batch_size, 
                         validation_data=validation_data,
+                        validation_split=validation_split,
                         verbose=verbose)
     
     return(model, history)

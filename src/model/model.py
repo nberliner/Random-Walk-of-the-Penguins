@@ -15,7 +15,8 @@ from keras.layers.core import Dropout
 from keras.models import Model
 
 
-def split_train_test(df_features, test=['2011', '2012', '2013']):
+#def split_train_test(df_features, test=['2011', '2012', '2013']):
+def split_train_test(df_features, test=['2008', '2009', '2010', '2011', '2012', '2013']):
     """
     Split the feature DataFrame in test and train set. Use the last three
     years by default as test set.
@@ -31,28 +32,50 @@ def split_train_test(df_features, test=['2011', '2012', '2013']):
     return(train, test)
     
 
+
+  
+#def keras_amape(accuracies):
+#    """
+#    Adjusted MAPE. Originally taken from the DrivenData benchmark blogpost,
+#    adapted to be used as loss in Keras.
+#    """
+#    # https://github.com/fchollet/keras/issues/2121
+#
+#    def loss(y_true, y_pred):
+#        # calculate absolute error
+#        abs_error = K.abs(y_true - y_pred)
+#
+#        # calculate the percent error (replacing 0 with 1
+#        # in order to avoid divide-by-zero errors).
+#        #ones = K.ones(np.core.fromnumeric.shape(1,))
+#        ones = K.ones(shape=(1,)) #- 0.99
+#        pct_error = abs_error / K.maximum(ones, y_true)
+#
+#        # adjust error by count accuracies
+#        adj_error = pct_error / accuracies
+#
+#        # return the mean as a percentage
+#        return K.mean(adj_error)
+#    return(loss)
+    
 def keras_amape(accuracies):
     """
     Adjusted MAPE. Originally taken from the DrivenData benchmark blogpost,
     adapted to be used as loss in Keras.
     """
     # https://github.com/fchollet/keras/issues/2121
-
+    
     def loss(y_true, y_pred):
-        # calculate absolute error
-        abs_error = K.abs(y_true - y_pred)
-
-        # calculate the percent error (replacing 0 with 1
-        # in order to avoid divide-by-zero errors).
-        #ones = K.ones(np.core.fromnumeric.shape(1,))
-        ones = K.ones(shape=(1,)) - 0.99
-        pct_error = abs_error / K.maximum(ones, y_true)
-
-        # adjust error by count accuracies
-        adj_error = pct_error / accuracies
-
-        # return the mean as a percentage
-        return K.mean(adj_error)
+        # https://stats.stackexchange.com/a/201864
+        a = 2*(y_true - y_pred)
+        b = K.abs(y_true) + K.abs(y_pred)
+        
+        d = K.abs(a / b)
+        d = K.switch(K.equal(b, 0), 0, d)
+                
+        return K.mean(K.abs(d))
+    
+    
     return(loss)
     
 
@@ -212,13 +235,15 @@ def get_model(ts_steps, aux_input_size):
     x = Dropout(.2)(x)
     
     # And finally we add the main logistic regression layer
-    main_output = Dense(1, activation='relu', name='main_output')(x)
+#    main_output = Dense(1, activation='relu', name='main_output')(x)
+    main_output = Dense(1, activation='linear', name='main_output')(x)
     
     model = Model(inputs=[ts_input, seaIce_input, temperature_input, aux_input, acc_input], outputs=main_output)
     
     # Define the optimizer
 #    rmsprop = ks.optimizers.RMSprop(lr=0.001)
-    model.compile(optimizer='rmsprop', loss=keras_amape(acc_input))
-#    model.compile(optimizer='adam', loss=keras_amape(acc_input))
+#    model.compile(optimizer='rmsprop', loss=keras_amape(acc_input))
+    model.compile(optimizer='adam', loss=keras_amape(acc_input))
+#    model.compile(optimizer='adam', loss='mean_absolute_percentage_error')
     
     return(model)
