@@ -1,5 +1,5 @@
 # Random Walk of the Penguins
-Competition hosted by [DrivenData.org](https://www.drivendata.org)
+My submission to the [competition](https://www.drivendata.org/competitions/47/penguins/) hosted by [DrivenData.org](https://www.drivendata.org)
 
 ## Motivation
 
